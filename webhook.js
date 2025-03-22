@@ -8,7 +8,11 @@ app.use(express.json());
 
 // PostgreSQL Connection
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    user: process.env.PG_USER,
+    password: process.env.PG_PASSWORD,
+    host: process.env.PG_HOST || 'localhost',
+    port: process.env.PG_PORT || 5432,
+    database: process.env.PG_DATABASE,
 });
 
 // Redis Connection
