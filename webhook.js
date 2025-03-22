@@ -14,7 +14,13 @@ const pool = new Pool({
     port: process.env.PG_PORT || 5432,
     database: process.env.PG_DATABASE,
 });
-
+console.log("*********************************************************");
+console.log(PG_USER);
+console.log(PG_PASSWORD);
+console.log(PG_HOST);
+console.log(PG_PORT);
+console.log(PG_DATABASE);
+console.log("*********************************************************");
 // Redis Connection
 const redisClient = redis.createClient({
     socket: {
