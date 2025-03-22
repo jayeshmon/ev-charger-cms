@@ -34,7 +34,8 @@ redisClient.on("connect", () => console.log("✅ Connected to Redis"));
 app.post("/webhook", async (req, res) => {
     try {
         const payload = req.body;
-        const payment = payload?.payload?.payment?.entity;
+        const payment = (payload && payload.payload && payload.payload.payment) ? payload.payload.payment.entity : null;
+
 
         if (!payment) {
             console.error("❌ Invalid Webhook Payload:", payload);
