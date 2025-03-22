@@ -15,13 +15,13 @@ const pool = new Pool({
     database: process.env.PG_DATABASE || 'my_database',
 
 });
-console.log("*********************************************************");
-console.log(PG_USER);
-console.log(PG_PASSWORD);
-console.log(PG_HOST);
-console.log(PG_PORT);
-console.log(PG_DATABASE);
-console.log("*********************************************************");
+//console.log("*********************************************************");
+//console.log(PG_USER);
+//console.log(PG_PASSWORD);
+//console.log(PG_HOST);
+//console.log(PG_PORT);
+//console.log(PG_DATABASE);
+//console.log("*********************************************************");
 // Redis Connection
 const redisClient = redis.createClient({
     socket: {
