@@ -12,7 +12,7 @@ const pool = new Pool({
     password: process.env.PG_PASSWORD || "mypassword",
     host: process.env.PG_HOST || 'localhost',
     port: process.env.PG_PORT || 5432,
-    database: process.env.PG_DATABASE || 'my_database',
+    database: process.env.PG_DATABASE || 'mydatabase',
 
 });
 //console.log("*********************************************************");
