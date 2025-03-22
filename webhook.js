@@ -43,13 +43,21 @@ app.post("/webhook", async (req, res) => {
 
         // Extract necessary fields
         const { id, order_id, amount, currency, status, method, email, contact, created_at } = payment;
-        const card_last4 = payment.card?.last4 || null;
-        const card_network = payment.card?.network || null;
-        const card_type = payment.card?.type || null;
-        const issuer = payment.card?.issuer || null;
+        const card_last4 = (payment.card && payment.card.last4) ? payment.card.last4 : null;
+const card_network = (payment.card && payment.card.network) ? payment.card.network : null;
+const card_type = (payment.card && payment.card.type) ? payment.card.type : null;
+const issuer = (payment.card && payment.card.issuer) ? payment.card.issuer : null;
 
         // Extract Machine ID (mid) safely
-        const mid = payment.notes?.find(note => note.mid)?.mid || null;
+        let mid = null;
+if (payment.notes && Array.isArray(payment.notes)) {
+    for (const note of payment.notes) {
+        if (note.mid) {
+            mid = note.mid;
+            break; // Stop after finding the first valid mid
+        }
+    }
+}
         console.log("🔹 Machine ID (mid):", mid);
 
         // Store in PostgreSQL
