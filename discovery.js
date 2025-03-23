@@ -181,10 +181,19 @@ app.post("/parsedata", async (req, res) => {
             processPacket(packet);
             const imei = packet.t;
             const telemetryTimeMs = convertTimestampToMs(packet.T);
-
+        
+            // ✅ Store the first packet where `AD === 1` in Redis DB 3
+            if (packet.AD === 1) {
+                await redisClient.select(3); // Switch to Redis DB 3
+                await redisClient.set(imei, JSON.stringify(packet));
+                console.log(`✅ Stored packet with AD=1 in Redis DB 3 for IMEI: ${imei}`);
+            }
+        
             // Get charge finish time from Redis DB 2
+            await redisClient.select(2); // Switch to Redis DB 2
             const chargeFinishTime = await getChargeFinishTime(imei);
-             console.log(chargeFinishTime)
+            console.log(`🔹 Charge Finish Time: ${chargeFinishTime}`);
+        
             if (chargeFinishTime !== null) {
                 if (chargeFinishTime > telemetryTimeMs) {
                     return res.status(200).send({
@@ -200,6 +209,7 @@ app.post("/parsedata", async (req, res) => {
                 }
             }
         }
+        
 
       
 
