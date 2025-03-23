@@ -77,33 +77,55 @@ app.post("/webhook", async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid webhook data" });
         }
 
-        // Extract necessary fields
-        const { id, order_id, amount, currency, status, method, email, contact, created_at } = payment;
-        const card_last4 = (payment.card && payment.card.last4) ? payment.card.last4 : null;
-        const card_network = (payment.card && payment.card.network) ? payment.card.network : null;
-        const card_type = (payment.card && payment.card.type) ? payment.card.type : null;
-        const issuer = (payment.card && payment.card.issuer) ? payment.card.issuer : null;
+        const { id, amount, currency, status, method, created_at,  order_id ,contact,email } = payment;
+
+        // Ensure all optional fields have a default null value
+        let vpa = null, payer_account_type = null;
+        let card_last4 = null, card_network = null, card_type = null, issuer = null;
+        
+
+        if (method === "card") {
+            card_last4 = payment.card.last4 || null;
+            card_network = payment.card.network || null;
+            card_type = payment.card.type || null;
+            issuer = payment.card.issuer || null;
+        } else if (method === "upi") {
+            vpa = payment.vpa || payment.upi.vpa || null;
+            payer_account_type = payment.upi.payer_account_type || null;
+        }
+
+        // Convert created_at to timestamp
+        const createdAtTimestamp = new Date(created_at * 1000).toISOString().replace("T", " ").split(".")[0];
+
+        // Ensure all 15 fields are present in the query
+        const query = `
+            INSERT INTO payments (payment_id, order_id, amount, currency, status, method, 
+                                  card_last4, card_network, card_type, issuer, 
+                                  vpa, payer_account_type, email, contact, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, 
+                    $7, $8, $9, $10, 
+                    $11, $12, $13, $14, $15)
+            ON CONFLICT (payment_id) DO NOTHING;
+        `;
+
+        const values = [
+            id, order_id , amount, currency, status, method,
+            card_last4, card_network, card_type, issuer,   // Always define card details (even if null)
+            vpa, payer_account_type, email , contact,
+            createdAtTimestamp
+        ];
+        console.log(values);
+        await pool.query(query,values);
+
 
         // Extract Machine ID (mid) safely
         let mid = null;
-        if (payment.notes && Array.isArray(payment.notes)) {
-            for (const note of payment.notes) {
-                if (note.mid) {
-                    mid = note.mid;
-                    break; // Stop after finding the first valid mid
-                }
-            }
-        }
-        console.log("🔹 Machine ID (mid):", mid);
+if (payment.notes && typeof payment.notes === "object") {
+    mid = payment.notes.mid || null;
+}
+console.log("🔹 Machine ID (mid):", mid);
 
-        // Store in PostgreSQL
-        const query = `
-            INSERT INTO payments (payment_id, order_id, amount, currency, status, method, card_last4, card_network, card_type, issuer, email, contact, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, to_timestamp($13))
-            ON CONFLICT (payment_id) DO NOTHING;
-        `;
-        await pool.query(query, [id, order_id, amount, currency, status, method, card_last4, card_network, card_type, issuer, email, contact, created_at]);
-
+        
         // Store payment in Redis (DB 0)
         if (mid) {
             await redisClient.select(0);
