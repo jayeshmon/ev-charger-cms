@@ -67,7 +67,7 @@ async function setFinishTime(mid, chargeFinishTime) {
 }
 
 app.post("/webhook", async (req, res) => {
-    console.log(req.body);
+    console.log(JSON.stringify(req.body));
     try {
         const payload = req.body;
         const payment = (payload && payload.payload && payload.payload.payment) ? payload.payload.payment.entity : null;
