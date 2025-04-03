@@ -136,7 +136,7 @@ console.log("🔹 Machine ID (mid):", mid);
             const tariff = await getTariff(mid);
 
             // Calculate charge finish time
-            const durationInMs = (amount / tariff) * 3600000; // Convert to milliseconds
+            const durationInMs = (amount / tariff) * 60000; // Convert to milliseconds
             const chargeFinishTime = Date.now() + durationInMs;
 
             // Store charge finish time in Redis DB 2

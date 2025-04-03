@@ -198,13 +198,13 @@ app.post("/parsedata", async (req, res) => {
                 if (chargeFinishTime > telemetryTimeMs) {
                     return res.status(200).send({
                         "status": 1,
-                        "command": "SET CUIMOB:OFF"
+                        "command": "SET CUIMOB:ON"
                     });
                 } else {
                     await clearRedisKeys(imei);
                     return res.status(200).send({
                         "status": 1,
-                        "command": "SET CUIMOB:ON"
+                        "command": "SET CUIMOB:OFF"
                     });
                 }
             }
