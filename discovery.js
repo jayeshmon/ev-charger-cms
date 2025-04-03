@@ -215,7 +215,10 @@ app.post("/parsedata", async (req, res) => {
 
 
 
-        res.status(200).send({ message: "Data processed successfully" });
+        res.status(200).send({
+            "status": 1,
+        
+        });
     } catch (err) {
         console.error("❌ Error processing data:", err);
         res.status(500).send({ error: "Internal server error" });

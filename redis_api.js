@@ -47,14 +47,20 @@ app.get("/online-devices", async (req, res) => {
   try {
     const keyValues = await getAllKeyValues(3); // DB 3 stores device packets
     const currentTime = getCurrentTimestampMs();
-    const onlineDevices = keyValues.filter(({ value: packet }) => {
-      if (packet && packet.T) {
-        // Assuming "T" is a timestamp string in a format recognized by Date
-        const telemetryTimeMs = new Date(packet.T).getTime();
-        return currentTime - telemetryTimeMs <= 120000; // within 2 minutes
-      }
-      return false;
-    }).map(({ value }) => value);
+    //console.log(keyValues);
+    const onlineDevices = keyValues
+  .filter(({ value: packet }) => {
+    if (packet && packet.T) {
+      const telemetryTimeMs = new Date(packet.T).getTime();
+      console.log(currentTime);
+      console.log(telemetryTimeMs);
+
+      return currentTime - telemetryTimeMs <= 1200000; // Boolean condition
+    }
+    return false;
+  })
+  .map(({ value }) => value);
+
     
     res.json({ status: "success", onlineDevices });
   } catch (error) {
@@ -110,16 +116,57 @@ app.get("/disconnected-devices", async (req, res) => {
 });
 
 // 5) Get count of payment received devices (entries in Redis DB 0)
-app.get("/payment-received-count", async (req, res) => {
-  try {
-    await redisClient.select(0);
-    const keys = await redisClient.keys("*");
-    res.json({ status: "success", paymentCount: keys.length });
-  } catch (error) {
-    console.error("❌ Error fetching payment count:", error);
-    res.status(500).json({ status: "error", message: "Server Error" });
-  }
-});
+app.get("/payment-received-devices", async (req, res) => {
+    try {
+      // Switch to Redis DB 0
+      await redisClient.select(0);
+  
+      // Get all payment keys
+      const keys = await redisClient.keys("*");
+      if (keys.length === 0) {
+        
+        return res.json({ status: "success", paymentCount: 0, devices: [] });
+      }
+  
+      // Fetch all payment data in a pipeline
+      const pipeline = redisClient.pipeline();
+      keys.forEach((key) => pipeline.get(key));
+      const payments = await pipeline.exec();
+ 
+      // Extract MIDs from payment data
+      const mids = payments
+        .map(([err, data]) => {
+          if (err) return null;
+          const parsedData = JSON.parse(data);
+          return parsedData?.notes?.mid || null;
+        })
+        .filter((mid) => mid !== null); // Remove null values
+        
+      if (mids.length === 0) {
+        return res.json({ status: "success", paymentCount: keys.length, devices: [] });
+      }
+  
+      // Switch to Redis DB 3 to fetch data for each MID
+      await redisClient.select(3);
+      const pipeline3 = redisClient.pipeline();
+      mids.forEach((mid) => pipeline3.get(mid));
+      const devicesData = await pipeline3.exec();
+  console.log(devicesData)
+      // Parse the retrieved data
+      const devices = devicesData
+        .map(([err, data]) => (err ? null : JSON.parse(data)))
+        .filter((device) => device !== null);
+  
+      res.json({
+        status: "success",
+        paymentCount: keys.length,
+        devices,
+      });
+    } catch (error) {
+      console.error("❌ Error fetching payment received devices:", error);
+      res.status(500).json({ status: "error", message: "Server Error" });
+    }
+  });
 
 // 6) Monitor disconnections from Redis DB 2
 // If current time is greater than the stored disconnection time, send an SMS and delete the key.
